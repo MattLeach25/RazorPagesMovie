@@ -16,13 +16,13 @@ namespace RazorPagesMovie.Pages.Documentaries
     {
         private readonly RazorPagesMovie.Data.RazorPagesMovieContext _context;
         private readonly ActivitySource? _activitySource;
-        private readonly Counter<long> _documentariesCreatedCounter;
+        private readonly Counter<long>? _documentariesCreatedCounter;
 
         public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, ActivitySource? activitySource = null, Meter? meter = null)
         {
             _context = context;
             _activitySource = activitySource;
-            _documentariesCreatedCounter = meter?.CreateCounter<long>("documentaries.created", unit: "documentaries", description: "Number of documentaries created")!;
+            _documentariesCreatedCounter = meter?.CreateCounter<long>("documentaries.created", unit: "documentaries", description: "Number of documentaries created");
         }
 
         public IActionResult OnGet()
@@ -50,7 +50,7 @@ namespace RazorPagesMovie.Pages.Documentaries
             {
                 activity?.SetTag("documentary.title", Documentary.Title ?? "Untitled");
                 activity?.SetTag("documentary.platform", Documentary.Platform ?? "Unspecified");
-                activity?.SetTag("event.name", "Documentaries Created");
+                activity?.SetTag("event.name", "DocumentariesCreated");
             }
 
             if (Documentary.isFavourite)

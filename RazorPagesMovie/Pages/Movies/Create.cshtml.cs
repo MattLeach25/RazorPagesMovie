@@ -17,13 +17,13 @@ namespace RazorPagesMovie.Pages.Movies
     {
         private readonly RazorPagesMovie.Data.RazorPagesMovieContext _context;
         private readonly ActivitySource? _activitySource;
-        private readonly Counter<long> _moviesCreatedCounter;
+        private readonly Counter<long>? _moviesCreatedCounter;
 
         public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, ActivitySource? activitySource = null, Meter? meter = null)
         {
             _context = context;
             _activitySource = activitySource;
-            _moviesCreatedCounter = meter?.CreateCounter<long>("movies.created", unit: "movies", description: "Number of movies created")!;
+            _moviesCreatedCounter = meter?.CreateCounter<long>("movies.created", unit: "movies", description: "Number of movies created");
         }
 
         public IActionResult OnGet()
