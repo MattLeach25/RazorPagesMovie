@@ -16,15 +16,14 @@ namespace RazorPagesMovie.Pages.Movies
     public class CreateModel : PageModel
     {
         private readonly RazorPagesMovie.Data.RazorPagesMovieContext _context;
-        private readonly ActivitySource _activitySource;
+        private readonly ActivitySource? _activitySource;
         private readonly Counter<long> _moviesCreatedCounter;
 
         public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, ActivitySource? activitySource = null, Meter? meter = null)
         {
             _context = context;
-            _activitySource = activitySource ?? new ActivitySource("RazorPagesMovie");
-            _moviesCreatedCounter = meter?.CreateCounter<long>("movies.created", unit: "movies", description: "Number of movies created") 
-                ?? new Meter("RazorPagesMovie").CreateCounter<long>("movies.created");
+            _activitySource = activitySource;
+            _moviesCreatedCounter = meter?.CreateCounter<long>("movies.created", unit: "movies", description: "Number of movies created")!;
         }
 
         public IActionResult OnGet()
@@ -47,7 +46,7 @@ namespace RazorPagesMovie.Pages.Movies
             await _context.SaveChangesAsync();
             
             // Create activity for MovieCreated event
-            using (var activity = _activitySource.StartActivity("MovieCreated", ActivityKind.Internal))
+            using (var activity = _activitySource?.StartActivity("MovieCreated", ActivityKind.Internal))
             {
                 activity?.SetTag("movie.title", Movie.Title ?? "Untitled");
                 activity?.SetTag("movie.genre", Movie.Genre ?? "Unknown");
@@ -57,16 +56,16 @@ namespace RazorPagesMovie.Pages.Movies
             if (Movie.isFavourite)
             {
                 // Create activity for favourite movie event
-                using (var activity = _activitySource.StartActivity("FavouriteMovie", ActivityKind.Internal))
+                using (var activity = _activitySource?.StartActivity("FavouriteMovie", ActivityKind.Internal))
                 {
                     activity?.SetTag("movie.title", Movie.Title ?? "Untitled");
                     activity?.SetTag("movie.genre", Movie.Genre ?? "Unknown");
-                    activity?.SetTag("event.name", "favouriteMovie");
+                    activity?.SetTag("event.name", "FavouriteMovie");
                 }
             }
 
             // Record metric for movies created
-            _moviesCreatedCounter.Add(1, 
+            _moviesCreatedCounter?.Add(1, 
                 new KeyValuePair<string, object?>("movie.genre", Movie.Genre ?? "Unknown"));
 
             return RedirectToPage("./Index");

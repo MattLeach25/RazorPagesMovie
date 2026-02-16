@@ -15,15 +15,14 @@ namespace RazorPagesMovie.Pages.Documentaries
     public class CreateModel : PageModel
     {
         private readonly RazorPagesMovie.Data.RazorPagesMovieContext _context;
-        private readonly ActivitySource _activitySource;
+        private readonly ActivitySource? _activitySource;
         private readonly Counter<long> _documentariesCreatedCounter;
 
         public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, ActivitySource? activitySource = null, Meter? meter = null)
         {
             _context = context;
-            _activitySource = activitySource ?? new ActivitySource("RazorPagesMovie");
-            _documentariesCreatedCounter = meter?.CreateCounter<long>("documentaries.created", unit: "documentaries", description: "Number of documentaries created") 
-                ?? new Meter("RazorPagesMovie").CreateCounter<long>("documentaries.created");
+            _activitySource = activitySource;
+            _documentariesCreatedCounter = meter?.CreateCounter<long>("documentaries.created", unit: "documentaries", description: "Number of documentaries created")!;
         }
 
         public IActionResult OnGet()
@@ -47,7 +46,7 @@ namespace RazorPagesMovie.Pages.Documentaries
             await _context.SaveChangesAsync();
 
             // Create activity for DocumentariesCreated event
-            using (var activity = _activitySource.StartActivity("DocumentariesCreated", ActivityKind.Internal))
+            using (var activity = _activitySource?.StartActivity("DocumentariesCreated", ActivityKind.Internal))
             {
                 activity?.SetTag("documentary.title", Documentary.Title ?? "Untitled");
                 activity?.SetTag("documentary.platform", Documentary.Platform ?? "Unspecified");
@@ -57,7 +56,7 @@ namespace RazorPagesMovie.Pages.Documentaries
             if (Documentary.isFavourite)
             {
                 // Create activity for favourite documentary event
-                using (var activity = _activitySource.StartActivity("FavouriteDocumentary", ActivityKind.Internal))
+                using (var activity = _activitySource?.StartActivity("FavouriteDocumentary", ActivityKind.Internal))
                 {
                     activity?.SetTag("documentary.title", Documentary.Title ?? "Untitled");
                     activity?.SetTag("documentary.platform", Documentary.Platform ?? "Unspecified");
@@ -67,7 +66,7 @@ namespace RazorPagesMovie.Pages.Documentaries
             }
 
             // Record metric for documentaries created
-            _documentariesCreatedCounter.Add(1, 
+            _documentariesCreatedCounter?.Add(1, 
                 new KeyValuePair<string, object?>("documentary.platform", Documentary.Platform ?? "Unspecified"));
 
             return RedirectToPage("./Index");

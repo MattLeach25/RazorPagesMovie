@@ -20,6 +20,9 @@ var meter = new Meter("RazorPagesMovie");
 builder.Services.AddSingleton(activitySource);
 builder.Services.AddSingleton(meter);
 
+// Configure OpenTelemetry
+ConfigureOpenTelemetry(builder);
+
 var connectionString = builder.Configuration.GetConnectionString("RazorPagesMovieContext")
     ?? throw new InvalidOperationException("Connection string 'RazorPagesMovieContext' not found.");
 
@@ -28,25 +31,6 @@ if (builder.Environment.IsDevelopment())
     // Local development: Use SQLite
     builder.Services.AddDbContext<RazorPagesMovieContext>(options =>
         options.UseSqlite(connectionString));
-    
-    // Configure OpenTelemetry with Azure Monitor
-    var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-    if (!string.IsNullOrEmpty(appInsightsConnectionString))
-    {
-        builder.Services.AddOpenTelemetry()
-            .UseAzureMonitor(options =>
-            {
-                options.ConnectionString = appInsightsConnectionString;
-            })
-            .WithTracing(tracing =>
-            {
-                tracing.AddSource("RazorPagesMovie");
-            })
-            .WithMetrics(metrics =>
-            {
-                metrics.AddMeter("RazorPagesMovie");
-            });
-    }
 }
 else
 {
@@ -58,25 +42,6 @@ else
     builder.Services.AddDbContext<RazorPagesMovieContext>(options =>
             options.UseSqlServer(sqlConnectionStringBuilder.ConnectionString)
                    .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
-    
-    // Configure OpenTelemetry with Azure Monitor for production
-    var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-    if (!string.IsNullOrEmpty(appInsightsConnectionString))
-    {
-        builder.Services.AddOpenTelemetry()
-            .UseAzureMonitor(options =>
-            {
-                options.ConnectionString = appInsightsConnectionString;
-            })
-            .WithTracing(tracing =>
-            {
-                tracing.AddSource("RazorPagesMovie");
-            })
-            .WithMetrics(metrics =>
-            {
-                metrics.AddMeter("RazorPagesMovie");
-            });
-    }
 }
 
 var app = builder.Build();
@@ -174,3 +139,24 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 app.Run();
+
+static void ConfigureOpenTelemetry(WebApplicationBuilder builder)
+{
+    var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+    if (!string.IsNullOrEmpty(appInsightsConnectionString))
+    {
+        builder.Services.AddOpenTelemetry()
+            .UseAzureMonitor(options =>
+            {
+                options.ConnectionString = appInsightsConnectionString;
+            })
+            .WithTracing(tracing =>
+            {
+                tracing.AddSource("RazorPagesMovie");
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddMeter("RazorPagesMovie");
+            });
+    }
+}
