@@ -1,0 +1,54 @@
+﻿@page
+@model RazorPagesMovie.Pages.Documentaries.EditModel
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>Documentary</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Documentary.Id" />
+            <div class="form-group">
+                <label asp-for="Documentary.Title" class="control-label"></label>
+                <input asp-for="Documentary.Title" class="form-control" />
+                <span asp-validation-for="Documentary.Title" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Documentary.ReleaseDate" class="control-label"></label>
+                <input asp-for="Documentary.ReleaseDate" class="form-control" />
+                <span asp-validation-for="Documentary.ReleaseDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Documentary.Genre" class="control-label"></label>
+                <input asp-for="Documentary.Genre" class="form-control" />
+                <span asp-validation-for="Documentary.Genre" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Documentary.Platform" class="control-label"></label>
+                <input asp-for="Documentary.Platform" class="form-control" />
+                <span asp-validation-for="Documentary.Platform" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <input asp-for="Documentary.isFavourite" type="checkbox" class="form-check-input" />
+                <label asp-for="Documentary.isFavourite" class="form-check-label"></label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="./Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

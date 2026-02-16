@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: razorpagesmovie-sa
+  annotations:
+    azure.workload.identity/client-id: "765e4a7d-e264-4aed-91d9-8b72835e04e5"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: razorpagesmovie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: razorpagesmovie
+  template:
+    metadata:
+      labels:
+        app: razorpagesmovie
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: razorpagesmovie-sa
+      containers:
+      - name: razorpagesmovie
+        image: mltestacr6.azurecr.io/razorpagesmovie:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ConnectionStrings__RazorPagesMovieContext
+          value: "Server=tcp:mltestsql6.database.windows.net,1433;Initial Catalog=RazorPagesMovieDB;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        - name: AZURE_CLIENT_ID
+          value: "765e4a7d-e264-4aed-91d9-8b72835e04e5"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: razorpagesmovie-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: razorpagesmovie
+  ports:
+  - port: 80
+    targetPort: 8080
+

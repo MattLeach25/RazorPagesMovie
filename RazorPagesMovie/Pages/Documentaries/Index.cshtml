@@ -1,0 +1,73 @@
+﻿@page
+@model RazorPagesMovie.Pages.Documentaries.IndexModel
+
+@{
+    ViewData["Title"] = "Documentaries";
+}
+
+<h1>Documentaries</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<form>
+    <p>
+        <label>Title: <input type="text" asp-for="search" /></label>
+        <input type="submit" value="Filter" />
+        <label>Favourite: <input type="checkbox" asp-for="SearchFavourite" onchange="this.form.submit()" /></label>
+    </p>
+</form>
+
+@if(Model.Documentary.Count == 0)
+{
+    Write("There are no documentaries to display");
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Documentary[0].Title)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documentary[0].ReleaseDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documentary[0].Genre)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documentary[0].Platform)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documentary[0].isFavourite)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Documentary) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ReleaseDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Genre)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Platform)
+            </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.isFavourite)
+                </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
