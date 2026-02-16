@@ -3,11 +3,23 @@ using Microsoft.Extensions.DependencyInjection;
 using RazorPagesMovie.Data;
 using Azure.Identity;
 using Microsoft.Data.SqlClient;
-using Microsoft.ApplicationInsights.Extensibility;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+
+// Register ActivitySource and Meter for custom telemetry
+var activitySource = new ActivitySource("RazorPagesMovie");
+var meter = new Meter("RazorPagesMovie");
+builder.Services.AddSingleton(activitySource);
+builder.Services.AddSingleton(meter);
+
 var connectionString = builder.Configuration.GetConnectionString("RazorPagesMovieContext")
     ?? throw new InvalidOperationException("Connection string 'RazorPagesMovieContext' not found.");
 
@@ -16,7 +28,25 @@ if (builder.Environment.IsDevelopment())
     // Local development: Use SQLite
     builder.Services.AddDbContext<RazorPagesMovieContext>(options =>
         options.UseSqlite(connectionString));
-    builder.Services.AddApplicationInsightsTelemetry();
+    
+    // Configure OpenTelemetry with Azure Monitor
+    var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+    if (!string.IsNullOrEmpty(appInsightsConnectionString))
+    {
+        builder.Services.AddOpenTelemetry()
+            .UseAzureMonitor(options =>
+            {
+                options.ConnectionString = appInsightsConnectionString;
+            })
+            .WithTracing(tracing =>
+            {
+                tracing.AddSource("RazorPagesMovie");
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddMeter("RazorPagesMovie");
+            });
+    }
 }
 else
 {
@@ -28,6 +58,25 @@ else
     builder.Services.AddDbContext<RazorPagesMovieContext>(options =>
             options.UseSqlServer(sqlConnectionStringBuilder.ConnectionString)
                    .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+    
+    // Configure OpenTelemetry with Azure Monitor for production
+    var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+    if (!string.IsNullOrEmpty(appInsightsConnectionString))
+    {
+        builder.Services.AddOpenTelemetry()
+            .UseAzureMonitor(options =>
+            {
+                options.ConnectionString = appInsightsConnectionString;
+            })
+            .WithTracing(tracing =>
+            {
+                tracing.AddSource("RazorPagesMovie");
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddMeter("RazorPagesMovie");
+            });
+    }
 }
 
 var app = builder.Build();
