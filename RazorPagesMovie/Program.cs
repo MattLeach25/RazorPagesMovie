@@ -39,10 +39,13 @@ if (builder.Environment.IsDevelopment())
         options.UseSqlite(connectionString));
     
     // Configure OpenTelemetry with Azure Monitor
-    builder.Services.AddOpenTelemetry().UseAzureMonitor(options =>
-    {
-        options.ConnectionString = builder.Configuration.GetValue<string>("ApplicationInsights:ConnectionString");
-    });
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracerBuilder => tracerBuilder.AddSource("RazorPagesMovie"))
+        .WithMetrics(metricsBuilder => metricsBuilder.AddMeter("RazorPagesMovie"))
+        .UseAzureMonitor(options =>
+        {
+            options.ConnectionString = builder.Configuration.GetValue<string>("ApplicationInsights:ConnectionString");
+        });
 }
 else
 {
