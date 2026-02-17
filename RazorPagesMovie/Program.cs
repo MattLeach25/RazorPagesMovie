@@ -8,16 +8,26 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 var builder = WebApplication.CreateBuilder(args);
 
-// Create custom ActivitySource and Meter for custom telemetry
-var activitySource = new ActivitySource("RazorPagesMovie");
-var meter = new Meter("RazorPagesMovie");
-
 // Add services to the container.
 builder.Services.AddRazorPages();
 
-// Register ActivitySource and Meter as singletons for dependency injection
-builder.Services.AddSingleton(activitySource);
-builder.Services.AddSingleton(meter);
+// Create and register custom ActivitySource and Meter for custom telemetry
+// These will be disposed when the application shuts down
+builder.Services.AddSingleton(sp =>
+{
+    var activitySource = new ActivitySource("RazorPagesMovie");
+    var lifetime = sp.GetRequiredService<IHostApplicationLifetime>();
+    lifetime.ApplicationStopping.Register(() => activitySource.Dispose());
+    return activitySource;
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var meter = new Meter("RazorPagesMovie");
+    var lifetime = sp.GetRequiredService<IHostApplicationLifetime>();
+    lifetime.ApplicationStopping.Register(() => meter.Dispose());
+    return meter;
+});
 
 var connectionString = builder.Configuration.GetConnectionString("RazorPagesMovieContext")
     ?? throw new InvalidOperationException("Connection string 'RazorPagesMovieContext' not found.");
@@ -141,7 +151,3 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 app.Run();
-
-// Dispose telemetry resources
-activitySource.Dispose();
-meter.Dispose();

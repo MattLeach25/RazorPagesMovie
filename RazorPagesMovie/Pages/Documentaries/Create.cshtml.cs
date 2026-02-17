@@ -48,7 +48,7 @@ namespace RazorPagesMovie.Pages.Documentaries
             await _context.SaveChangesAsync();
 
             // Track documentary created event using Activity
-            using (var activity = _activitySource?.StartActivity("Documentaries Created"))
+            using (var activity = _activitySource?.StartActivity("DocumentariesCreated"))
             {
                 activity?.SetTag("Title", Documentary.Title ?? "Untitled");
                 activity?.SetTag("Platform", Documentary.Platform ?? "Unspecified");
