@@ -19,8 +19,15 @@ builder.Services.AddSingleton(meter);
 // Add services to the container.
 builder.Services.AddRazorPages();
 
-// Add OpenTelemetry with Azure Monitor
-builder.Services.AddOpenTelemetry().UseAzureMonitor();
+// Add OpenTelemetry with Azure Monitor (only if connection string is configured)
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrEmpty(appInsightsConnectionString))
+{
+    builder.Services.AddOpenTelemetry().UseAzureMonitor(options =>
+    {
+        options.ConnectionString = appInsightsConnectionString;
+    });
+}
 
 var connectionString = builder.Configuration.GetConnectionString("RazorPagesMovieContext")
     ?? throw new InvalidOperationException("Connection string 'RazorPagesMovieContext' not found.");
