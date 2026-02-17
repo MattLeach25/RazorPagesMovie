@@ -57,7 +57,7 @@ namespace RazorPagesMovie.Pages.Movies
             if (Movie.isFavourite)
             {
                 // Track favourite movie event using Activity
-                using (var activity = _activitySource?.StartActivity("favouriteMovie"))
+                using (var activity = _activitySource?.StartActivity("FavouriteMovie"))
                 {
                     activity?.SetTag("Title", Movie.Title ?? "Untitled");
                     activity?.SetTag("Genre", Movie.Genre ?? "Unknown");

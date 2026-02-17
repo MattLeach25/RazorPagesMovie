@@ -141,3 +141,7 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 app.Run();
+
+// Dispose telemetry resources
+activitySource.Dispose();
+meter.Dispose();
