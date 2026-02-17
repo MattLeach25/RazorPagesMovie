@@ -7,19 +7,24 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using RazorPagesMovie.Data;
 using RazorPagesMovie.Models;
-using Microsoft.ApplicationInsights;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 namespace RazorPagesMovie.Pages.Documentaries
 {
     public class CreateModel : PageModel
     {
         private readonly RazorPagesMovie.Data.RazorPagesMovieContext _context;
-        private readonly TelemetryClient _telemetry;
+        private readonly ActivitySource? _activitySource;
+        private readonly Meter? _meter;
+        private readonly Counter<int>? _documentariesCreatedCounter;
 
-        public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, TelemetryClient? telemetry = null)
+        public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, ActivitySource? activitySource = null, Meter? meter = null)
         {
             _context = context;
-            _telemetry = telemetry;
+            _activitySource = activitySource;
+            _meter = meter;
+            _documentariesCreatedCounter = _meter?.CreateCounter<int>("DocumentariesCreated", description: "Number of documentaries created");
         }
 
         public IActionResult OnGet()
@@ -42,23 +47,26 @@ namespace RazorPagesMovie.Pages.Documentaries
             _context.Documentary.Add(Documentary);
             await _context.SaveChangesAsync();
 
-            _telemetry?.TrackEvent("Documentaries Created", new Dictionary<string, string>
+            // Track documentary created event using Activity
+            using (var activity = _activitySource?.StartActivity("DocumentariesCreated"))
             {
-                { "Title", Documentary.Title ?? "Untitled" },
-                { "Platform", Documentary.Platform ?? "Unspecified" }
-            });
+                activity?.SetTag("Title", Documentary.Title ?? "Untitled");
+                activity?.SetTag("Platform", Documentary.Platform ?? "Unspecified");
+            }
 
             if (Documentary.isFavourite)
             {
-                _telemetry?.TrackEvent("FavouriteDocumentary", new Dictionary<string, string>
+                // Track favourite documentary event using Activity
+                using (var activity = _activitySource?.StartActivity("FavouriteDocumentary"))
                 {
-                    {"Title", Documentary.Title?? "Untitled" },
-                    {"Platform", Documentary.Platform?? "Unspecified" }
-                });
+                    activity?.SetTag("Title", Documentary.Title ?? "Untitled");
+                    activity?.SetTag("Platform", Documentary.Platform ?? "Unspecified");
+                }
              
             }
 
-            _telemetry.TrackMetric("DocumentariesCreated", 1);
+            // Track metric
+            _documentariesCreatedCounter?.Add(1);
 
             return RedirectToPage("./Index");
         }

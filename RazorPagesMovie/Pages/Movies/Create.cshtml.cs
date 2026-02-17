@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using RazorPagesMovie.Data;
 using RazorPagesMovie.Models;
-using Microsoft.ApplicationInsights;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 
 namespace RazorPagesMovie.Pages.Movies
@@ -15,12 +16,16 @@ namespace RazorPagesMovie.Pages.Movies
     public class CreateModel : PageModel
     {
         private readonly RazorPagesMovie.Data.RazorPagesMovieContext _context;
-        private readonly TelemetryClient _telemetry;
+        private readonly ActivitySource? _activitySource;
+        private readonly Meter? _meter;
+        private readonly Counter<int>? _moviesCreatedCounter;
 
-        public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, TelemetryClient? telemetry = null)
+        public CreateModel(RazorPagesMovie.Data.RazorPagesMovieContext context, ActivitySource? activitySource = null, Meter? meter = null)
         {
             _context = context;
-            _telemetry = telemetry;
+            _activitySource = activitySource;
+            _meter = meter;
+            _moviesCreatedCounter = _meter?.CreateCounter<int>("MoviesCreated", description: "Number of movies created");
         }
 
         public IActionResult OnGet()
@@ -41,22 +46,26 @@ namespace RazorPagesMovie.Pages.Movies
 
             _context.Movie.Add(Movie);
             await _context.SaveChangesAsync();
-            _telemetry?.TrackEvent("MovieCreated", new Dictionary<string, string>
+            
+            // Track movie created event using Activity
+            using (var activity = _activitySource?.StartActivity("MovieCreated"))
             {
-                { "Title", Movie.Title ?? "Untitled" },
-                { "Genre", Movie.Genre ?? "Unknown" },
-            });
+                activity?.SetTag("Title", Movie.Title ?? "Untitled");
+                activity?.SetTag("Genre", Movie.Genre ?? "Unknown");
+            }
 
             if (Movie.isFavourite)
             {
-                _telemetry?.TrackEvent("favouriteMovie", new Dictionary<string, string>
+                // Track favourite movie event using Activity
+                using (var activity = _activitySource?.StartActivity("FavouriteMovie"))
                 {
-                    { "Title", Movie.Title ?? "Untitled" },
-                    { "Genre", Movie.Genre ?? "Unknown" }
-                });
+                    activity?.SetTag("Title", Movie.Title ?? "Untitled");
+                    activity?.SetTag("Genre", Movie.Genre ?? "Unknown");
+                }
             }
 
-            _telemetry.TrackMetric("MoviesCreated", 1);
+            // Track metric
+            _moviesCreatedCounter?.Add(1);
 
             return RedirectToPage("./Index");
         }

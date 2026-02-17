@@ -3,11 +3,32 @@ using Microsoft.Extensions.DependencyInjection;
 using RazorPagesMovie.Data;
 using Azure.Identity;
 using Microsoft.Data.SqlClient;
-using Microsoft.ApplicationInsights.Extensibility;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+
+// Create and register custom ActivitySource and Meter for custom telemetry
+// These will be disposed when the application shuts down
+builder.Services.AddSingleton(sp =>
+{
+    var activitySource = new ActivitySource("RazorPagesMovie");
+    var lifetime = sp.GetRequiredService<IHostApplicationLifetime>();
+    lifetime.ApplicationStopping.Register(() => activitySource.Dispose());
+    return activitySource;
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var meter = new Meter("RazorPagesMovie");
+    var lifetime = sp.GetRequiredService<IHostApplicationLifetime>();
+    lifetime.ApplicationStopping.Register(() => meter.Dispose());
+    return meter;
+});
+
 var connectionString = builder.Configuration.GetConnectionString("RazorPagesMovieContext")
     ?? throw new InvalidOperationException("Connection string 'RazorPagesMovieContext' not found.");
 
@@ -16,7 +37,15 @@ if (builder.Environment.IsDevelopment())
     // Local development: Use SQLite
     builder.Services.AddDbContext<RazorPagesMovieContext>(options =>
         options.UseSqlite(connectionString));
-    builder.Services.AddApplicationInsightsTelemetry();
+    
+    // Configure OpenTelemetry with Azure Monitor
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracerBuilder => tracerBuilder.AddSource("RazorPagesMovie"))
+        .WithMetrics(metricsBuilder => metricsBuilder.AddMeter("RazorPagesMovie"))
+        .UseAzureMonitor(options =>
+        {
+            options.ConnectionString = builder.Configuration.GetValue<string>("ApplicationInsights:ConnectionString");
+        });
 }
 else
 {
